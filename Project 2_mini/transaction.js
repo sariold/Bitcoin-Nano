@@ -1,0 +1,62 @@
+/*##########################
+
+CONFIGURATION
+##########################*/
+
+// -- Step 1: Set up the appropriate configuration
+var Web3 = require("web3");
+var EthereumTransaction = require("ethereumjs-tx").Transaction;
+var web3 = new Web3("HTTP://127.0.0.1:7545");
+
+// -- Step 2: Set the sending and receiving addresses for the transaction.
+var sendingAddress = "0x15EA7B573f7007713f78F1048abcc27A5072B09e";
+var receivingAddress = "0x0A5138f061319B4FE63119b9e6C6789697323185";
+
+// -- Step 3: Check the balances of each address
+web3.eth.getBalance(sendingAddress).then(console.log);
+web3.eth.getBalance(receivingAddress).then(console.log);
+
+/*##########################
+
+CREATE A TRANSACTION
+##########################*/
+
+// -- Step 4: Set up the transaction using the transaction variables as shown
+var rawTransaction = {
+	nonce: web3.utils.toHex(0),
+	to: receivingAddress,
+	gasPrice: web3.utils.toHex(20000000),
+	gasLimit: web3.utils.toHex(30000),
+	value: web3.utils.toHex(100),
+	data: "0x000",
+};
+
+// -- Step 5: View the raw transaction
+rawTransaction;
+
+// -- Step 6: Check the new account balances (they should be the same)
+web3.eth.getBalance(sendingAddress).then(console.log);
+web3.eth.getBalance(receivingAddress).then(console.log);
+
+// Note: They haven't changed because they need to be signed...
+
+/*##########################
+
+Sign the Transaction
+##########################*/
+
+// -- Step 7: Sign the transaction with the Hex value of the private key of the sender
+var privateKeySender =
+	"0831ae1de12af25e6f6d777651485b361f5a8f0742cd89cce11bda6284641b6f";
+var privateKeySenderHex = Buffer.from(privateKeySender, "hex");
+var transaction = new EthereumTransaction(rawTransaction);
+transaction.sign(privateKeySenderHex);
+
+/*#########################################
+
+Send the transaction to the network
+#########################################*/
+
+// -- Step 8: Send the serialized signed transaction to the Ethereum network.
+var serializedTransaction = transaction.serialize();
+web3.eth.sendSignedTransaction(serializedTransaction);
