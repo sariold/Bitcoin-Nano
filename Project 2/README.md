@@ -1,18 +1,16 @@
-Hello, all dependencies are setup inside the "package.json" files to be latest NPM versions so please run `npm install` before running any of the code. Thank you.
+### Hello, all dependencies are setup inside the "package.json" files to be latest NPM versions, except Truffle since it is a global install. So please run `npm install` in both directories before running any of the code. Thank you. <br></br>
 
-# Truffle version is: 5.5.15
+1. ERC-721 token name is: "Star Notary Token"
 
-# OpenZeppelin version is: 4.6.0
+2. ERC-721 token symbol is: "SNT"
 
-# Solidity version is: 0.8.1
+3. Truffle version is: "5.5.15"
 
-# ERC-721 token name is: "Star Notary Token"
+4. OpenZeppelin version is: "4.6.0"
 
-# ERC-721 token symbol is: "SNT"
+5. Solidity version is: "0.8.1"
 
-# Token address is:
-
----
+6. Token address is: "0x08aEE606dCCc75BAB63CBAb52751072f44C499a1"<br></br>
 
 # ND1309 C2 Ethereum Smart Contracts, Tokens and Dapps - Project Starter
 

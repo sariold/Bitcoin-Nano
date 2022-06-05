@@ -36,11 +36,15 @@ const App = {
 	},
 
 	createStar: async function () {
-		const { createStar } = this.meta.methods;
+		const { createStar, lookUptokenIdToStarInfo } = this.meta.methods;
 		const name = document.getElementById("starName").value;
 		const id = document.getElementById("starId").value;
+		const star = await lookUptokenIdToStarInfo(id).call();
+
+		console.log(star);
 		let status = "New Star Owner is " + this.account + ".";
-		if (name.length != 0 && onlyNumbers(id))
+		if (star.length != 0) status = "Star Id exists already.";
+		else if (name.length != 0 && onlyNumbers(id))
 			await createStar(name, id).send({ from: this.account });
 		else status = "Invalid star id / name provided.";
 		App.setStatus(status);

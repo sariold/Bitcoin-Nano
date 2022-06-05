@@ -22,11 +22,15 @@
  *
  */
 
-// const HDWallet = require('truffle-hdwallet-provider');
-// const infuraKey = "fj4jll3k.....";
+const HDWallet = require("@truffle/hdwallet-provider");
+const infuraKey = "ac88277e781b454bbd699924c146c85e";
 //
 // const fs = require('fs');
 // const mnemonic = fs.readFileSync(".secret").toString().trim();
+
+// Throwaway wallet
+const mnemonic =
+	"piece season ocean excite grunt never crystal bind skate bus name wasp";
 
 module.exports = {
 	/**
@@ -73,12 +77,16 @@ module.exports = {
 		// skipDryRun: true     // Skip dry run before migrations? (default: false for public nets )
 		// },
 
-		// Useful for private networks
-		// private: {
-		// provider: () => new HDWalletProvider(mnemonic, `https://network.io`),
-		// network_id: 2111,   // This network is yours, in the cloud.
-		// production: true    // Treats this network as if it was a public net. (default: false)
-		// }
+		rinkeby: {
+			provider: () =>
+				new HDWallet(
+					mnemonic,
+					`https://rinkeby.infura.io/v3/${infuraKey}`
+				),
+			network_id: 4, // rinkeby's id
+			gas: 4500000, // rinkeby has a lower block limit than mainnet
+			gasPrice: 10000000000,
+		},
 	},
 
 	// Set default mocha options here, use special reporters etc.
