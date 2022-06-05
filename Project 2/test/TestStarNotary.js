@@ -82,7 +82,6 @@ it("lets user2 buy a star and decreases its balance in ether", async () => {
 	const tx = await web3.eth.getTransaction(receipt.tx);
 	const gasPrice = new web3.utils.BN(tx.gasPrice);
 	const gasUsage = new web3.utils.BN(receipt.receipt.gasUsed);
-	const price = new web3.utils.BN(starPrice);
 
 	const gasCost = gasPrice.mul(gasUsage);
 
