@@ -1,6 +1,10 @@
 import Web3 from "web3";
 import starNotaryArtifact from "../../build/contracts/StarNotary.json";
 
+function onlyNumbers(str) {
+	return /^[0-9]+$/.test(str);
+}
+
 const App = {
 	web3: null,
 	account: null,
@@ -18,7 +22,7 @@ const App = {
 				deployedNetwork.address
 			);
 
-			// get accounts
+			// // get accounts
 			const accounts = await web3.eth.getAccounts();
 			this.account = accounts[0];
 		} catch (error) {
@@ -35,12 +39,22 @@ const App = {
 		const { createStar } = this.meta.methods;
 		const name = document.getElementById("starName").value;
 		const id = document.getElementById("starId").value;
-		await createStar(name, id).send({ from: this.account });
-		App.setStatus("New Star Owner is " + this.account + ".");
+		let status = "New Star Owner is " + this.account + ".";
+		if (name.length != 0 && onlyNumbers(id))
+			await createStar(name, id).send({ from: this.account });
+		else status = "Invalid star id / name provided.";
+		App.setStatus(status);
 	},
 
 	// Implement Task 4 Modify the front end of the DAPP
-	lookUp: async function () {},
+	lookUp: async function () {
+		const { lookUptokenIdToStarInfo } = this.meta.methods;
+		const id = document.getElementById("lookId").value;
+		const name = await lookUptokenIdToStarInfo(id).call();
+		let status = "The star name is '" + name + "'.";
+		if (name.length == 0) status = "No star with that id can be found.";
+		App.setStatus(status);
+	},
 };
 
 window.App = App;
@@ -49,7 +63,10 @@ window.addEventListener("load", async function () {
 	if (window.ethereum) {
 		// use MetaMask's provider
 		App.web3 = new Web3(window.ethereum);
-		await window.ethereum.enable(); // get permission to access accounts
+		// await window.ethereum.enable(); // get permission to access accounts
+		const accounts = await window.ethereum.request({
+			method: "eth_requestAccounts",
+		});
 	} else {
 		console.warn(
 			"No web3 detected. Falling back to http://127.0.0.1:9545. You should remove this fallback when you deploy live"
