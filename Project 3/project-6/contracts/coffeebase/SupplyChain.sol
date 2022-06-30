@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.1;
 
+import "../coffeecore/Ownable.sol";
 import "../coffeeaccesscontrol/ConsumerRole.sol";
 import "../coffeeaccesscontrol/DistributorRole.sol";
 import "../coffeeaccesscontrol/FarmerRole.sol";
@@ -181,8 +182,8 @@ contract SupplyChain is
         items[_upc].originFarmLatitude = _originFarmLatitude;
         items[_upc].originFarmLongitude = _originFarmLongitude;
         items[_upc].productNotes = _productNotes;
-
         items[_upc].itemState = State.Harvested;
+        items[_upc].productID = _upc + sku;
         // Increment sku
         items[_upc].sku = sku;
         sku = sku + 1;
@@ -199,7 +200,7 @@ contract SupplyChain is
     {
         // Update the appropriate fields
         items[_upc].itemState = State.Processed;
-        items[_upc].productID = _upc + sku;
+        items[_upc].productPrice = 1 ether;
         // Emit the appropriate event
         emit Processed(_upc);
     }

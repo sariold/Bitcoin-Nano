@@ -62,7 +62,10 @@ App = {
 			App.web3Provider = window.ethereum;
 			try {
 				// Request account access
-				await window.ethereum.enable();
+				// await window.ethereum.enable(); // deprecated
+				await window.ethereum.request({
+					method: "eth_requestAccounts",
+				});
 			} catch (error) {
 				// User denied account access...
 				console.error("User denied account access");
@@ -163,12 +166,13 @@ App = {
 		}
 	},
 
-	harvestItem: function (event) {
+	harvestItem: async function (event) {
 		event.preventDefault();
 		var processId = parseInt($(event.target).data("id"));
 
 		App.contracts.SupplyChain.deployed()
 			.then(function (instance) {
+				console.log("upc: " + App.upc + ", is being harvested");
 				return instance.harvestItem(
 					App.upc,
 					App.metamaskAccountID,
@@ -176,11 +180,16 @@ App = {
 					App.originFarmInformation,
 					App.originFarmLatitude,
 					App.originFarmLongitude,
-					App.productNotes
+					App.productNotes,
+					{
+						from: App.metamaskAccountID,
+					}
 				);
 			})
 			.then(function (result) {
+				console.log("monkeys");
 				$("#ftc-item").text(result);
+				$("#process-result").text(result);
 				console.log("harvestItem", result);
 			})
 			.catch(function (err) {
@@ -191,7 +200,7 @@ App = {
 	processItem: function (event) {
 		event.preventDefault();
 		var processId = parseInt($(event.target).data("id"));
-
+		console.log(App.metamaskAccountID);
 		App.contracts.SupplyChain.deployed()
 			.then(function (instance) {
 				return instance.processItem(App.upc, {
@@ -232,7 +241,7 @@ App = {
 
 		App.contracts.SupplyChain.deployed()
 			.then(function (instance) {
-				const productPrice = web3.toWei(1, "ether");
+				const productPrice = web3.utils.toWei("1", "ether");
 				console.log("productPrice", productPrice);
 				return instance.sellItem(App.upc, App.productPrice, {
 					from: App.metamaskAccountID,
@@ -253,7 +262,9 @@ App = {
 
 		App.contracts.SupplyChain.deployed()
 			.then(function (instance) {
-				const walletValue = web3.toWei(3, "ether");
+				var price = parseInt($("#productPrice").val());
+				console.log(price);
+				const walletValue = web3.utils.toWei(price.toString(), "ether");
 				return instance.buyItem(App.upc, {
 					from: App.metamaskAccountID,
 					value: walletValue,
@@ -309,11 +320,13 @@ App = {
 	purchaseItem: function (event) {
 		event.preventDefault();
 		var processId = parseInt($(event.target).data("id"));
+		var price = parseInt($("#productPrice").val());
 
 		App.contracts.SupplyChain.deployed()
 			.then(function (instance) {
 				return instance.purchaseItem(App.upc, {
 					from: App.metamaskAccountID,
+					value: price,
 				});
 			})
 			.then(function (result) {
@@ -324,27 +337,28 @@ App = {
 				console.log(err.message);
 			});
 	},
-
 	fetchItemBufferOne: function () {
+		console.log("calling fetchItemBufferOne)...");
 		///   event.preventDefault();
 		///    var processId = parseInt($(event.target).data('id'));
-		App.upc = $("#upc").val();
-		console.log("upc", App.upc);
-
 		App.contracts.SupplyChain.deployed()
 			.then(function (instance) {
-				return instance.fetchItemBufferOne(App.upc);
+				return instance.fetchItemBufferOne.call(App.upc);
 			})
 			.then(function (result) {
-				$("#ftc-item").text(result);
+				console.log("fetchItemBufferOne() successful");
+				$("#ftc-item").text(JSON.stringify(result, null, 4));
 				console.log("fetchItemBufferOne", result);
+				$("#buffer-result-1").text(JSON.stringify(result, null, 4));
 			})
 			.catch(function (err) {
+				console.log("fetchItemBufferOne() failed");
 				console.log(err.message);
 			});
 	},
 
 	fetchItemBufferTwo: function () {
+		console.log("calling fetchItemBufferTwo()...");
 		///    event.preventDefault();
 		///    var processId = parseInt($(event.target).data('id'));
 
@@ -353,15 +367,20 @@ App = {
 				return instance.fetchItemBufferTwo.call(App.upc);
 			})
 			.then(function (result) {
-				$("#ftc-item").text(result);
+				console.log("fetchItemBufferTwo() successful");
+				$("#ftc-item").text(JSON.stringify(result, null, 4));
 				console.log("fetchItemBufferTwo", result);
+				$("#buffer-result-2").text(JSON.stringify(result, null, 4));
 			})
 			.catch(function (err) {
+				console.log("fetchItemBufferTwo() failed");
 				console.log(err.message);
 			});
 	},
 
 	fetchEvents: function () {
+		console.log("calling fetchEvents()...");
+
 		if (
 			typeof App.contracts.SupplyChain.currentProvider.sendAsync !==
 			"function"
@@ -374,10 +393,12 @@ App = {
 			};
 		}
 
+		console.log("calling allEvents()...");
 		App.contracts.SupplyChain.deployed()
 			.then(function (instance) {
 				var events = instance.allEvents(function (err, log) {
-					if (!err)
+					if (!err) {
+						console.log("call to allEvents() successful");
 						$("#ftc-events").append(
 							"<li>" +
 								log.event +
@@ -385,7 +406,11 @@ App = {
 								log.transactionHash +
 								"</li>"
 						);
+					} else {
+						console.log(err);
+					}
 				});
+				console.log("events: " + events);
 			})
 			.catch(function (err) {
 				console.log(err.message);
