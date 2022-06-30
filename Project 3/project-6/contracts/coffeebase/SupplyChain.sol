@@ -9,13 +9,14 @@ import "../coffeeaccesscontrol/RetailerRole.sol";
 
 // Define a contract 'Supplychain'
 contract SupplyChain is
+    Ownable,
     ConsumerRole,
     DistributorRole,
     FarmerRole,
     RetailerRole
 {
     // Define 'owner'
-    address owner;
+    // address owner;
 
     // Define a variable called 'upc' for Universal Product Code (UPC)
     uint256 upc;
@@ -74,10 +75,10 @@ contract SupplyChain is
     event Purchased(uint256 upc);
 
     // Define a modifer that checks to see if msg.sender == owner of the contract
-    modifier onlyOwner() {
-        require(msg.sender == owner);
-        _;
-    }
+    // modifier onlyOwner() {
+    //     require(msg.sender == owner);
+    //     _;
+    // }
 
     // Define a modifer that verifies the Caller
     modifier verifyCaller(address _address) {
@@ -151,16 +152,14 @@ contract SupplyChain is
     // and set 'sku' to 1
     // and set 'upc' to 1
     constructor() payable {
-        owner = msg.sender;
+        // owner = msg.sender;
         sku = 1;
         upc = 1;
     }
 
     // Define a function 'kill' if required
-    function kill() public {
-        if (msg.sender == owner) {
-            selfdestruct(payable(owner));
-        }
+    function kill() public onlyOwner {
+        selfdestruct(payable(owner()));
     }
 
     // Define a function 'harvestItem' that allows a farmer to mark an item 'Harvested'
@@ -285,8 +284,6 @@ contract SupplyChain is
         payable
         onlyConsumer
         received(_upc)
-        checkValue(_upc)
-        paidEnough(items[_upc].productPrice)
     {
         // Update the appropriate fields - ownerID, consumerID, itemState
         items[_upc].ownerID = msg.sender;
