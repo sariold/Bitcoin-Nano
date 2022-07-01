@@ -42,22 +42,32 @@ IPFS was not implemented in this project at the moment but it is a great additio
 ### web3 Version
 ```1.7.3```
 
-# Requirement 5: Project write-up - Contract Addresses
+# Requirement 5: Project write-up - Contract Addresses and IDs
 
 ### SupplyChain.sol
 ```0xa8Af6748C73FeAFfa1e158D6844681c2f5A74B09```
 
+```0x1891ba4ea249e2b775aa15c9c3dc3642377e89a1aa381af71bf586839a330828```
+
 ### FarmerRole.sol
 ```0x1d0D3c36bB5bC29e5F2B11658e13e1cfa17dC1dA```
+
+```0x8fb35ab8a510ae71a69607d3cf50f7a43f5b633b91ffc71d10276ed0bda3784c```
 
 ### DistributorRole.sol
 ```0x7Dd6b5b2d8b258f9434585920107D3F96011ecd7```
 
+```0xfa499d22665dc907b4166cc5a7e8a98f5ebf00ae48b18ab01653cf8201da7257```
+
 ### RetailerRole.sol
 ```0x0110E4FC2BAcA5da0597BCf1bC661FeA994cf0BF```
 
+```0xf36db098ac1dae596fe9d4d6db161551aadce673a5d4c639eb3876ba1dd01279```
+
 ### ConsumerRole.sol
 ```0x92b1Ce0fF89Fd96EB2FC62288DCeDE8734997e9a```
+
+```0xc2532b476e9ff42700c9a0323018854701b95d93c0b0b6f4d1cb80e35cb29df8```
 
 ---
 
