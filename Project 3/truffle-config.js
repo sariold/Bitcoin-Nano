@@ -1,3 +1,10 @@
+const HDWallet = require("@truffle/hdwallet-provider");
+const infuraKey = "ac88277e781b454bbd699924c146c85e";
+
+// Throwaway wallet
+const mnemonic =
+	"piece season ocean excite grunt never crystal bind skate bus name wasp";
+
 module.exports = {
 	networks: {
 		development: {
@@ -5,6 +12,16 @@ module.exports = {
 			port: 9545,
 			network_id: "*", // Match any network id
 			websockets: true,
+		},
+		rinkeby: {
+			provider: () =>
+				new HDWallet(
+					mnemonic,
+					`https://rinkeby.infura.io/v3/${infuraKey}`
+				),
+			network_id: 4, // rinkeby's id
+			gas: 4500000, // rinkeby has a lower block limit than mainnet
+			gasPrice: 10000000000,
 		},
 	},
 	compilers: {
