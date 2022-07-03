@@ -1,11 +1,10 @@
 const webpack = require("webpack");
 const path = require("path");
 const nodeExternals = require("webpack-node-externals");
-const StartServerPlugin = require("start-server-webpack-plugin");
-
-console.log(__dirname);
+const StartServerPlugin = require("start-server-nestjs-webpack-plugin");
 
 module.exports = {
+	mode: "none",
 	entry: ["webpack/hot/poll?1000", "./src/server/index"],
 	watch: true,
 	target: "node",
@@ -23,6 +22,9 @@ module.exports = {
 			},
 		],
 	},
+	optimization: {
+		moduleIds: "named",
+	},
 	plugins: [
 		new StartServerPlugin("server.js"),
 		// new webpack.NamedModulesPlugin(),
@@ -37,5 +39,6 @@ module.exports = {
 	output: {
 		path: path.resolve(__dirname, "prod/server"),
 		filename: "server.js",
+		publicPath: "/server/",
 	},
 };

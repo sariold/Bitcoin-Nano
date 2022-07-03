@@ -1,10 +1,12 @@
+const webpack = require("webpack");
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 
 module.exports = {
-	entry: ["babel-polyfill", path.join(__dirname, "src/dapp")],
+	devtool: "eval-source-map",
+	entry: ["babel-polyfill", path.resolve(__dirname, "src/dapp")],
 	output: {
-		path: path.join(__dirname, "prod/dapp"),
+		path: path.resolve(__dirname, "prod/dapp"),
 		filename: "bundle.js",
 	},
 	module: {
@@ -20,7 +22,7 @@ module.exports = {
 			},
 			{
 				test: /\.(png|svg|jpg|gif)$/,
-				use: ["file-loader"],
+				type: "asset/resource",
 			},
 			{
 				test: /\.html$/,
@@ -31,15 +33,35 @@ module.exports = {
 	},
 	plugins: [
 		new HtmlWebpackPlugin({
-			template: path.join(__dirname, "src/dapp/index.html"),
+			template: path.resolve(__dirname, "src/dapp/index.html"),
+		}),
+		new webpack.ProvidePlugin({
+			Buffer: ["buffer", "Buffer"],
+		}),
+		new webpack.ProvidePlugin({
+			process: "process/browser",
 		}),
 	],
 	resolve: {
 		extensions: [".js"],
+		fallback: {
+			stream: require.resolve("stream-browserify"),
+			crypto: require.resolve("crypto-browserify"),
+			assert: require.resolve("assert/"),
+			http: require.resolve("stream-http"),
+			https: require.resolve("https-browserify"),
+			url: require.resolve("url/"),
+			os: require.resolve("os-browserify/browser"),
+			buffer: require.resolve("buffer"),
+		},
 	},
 	devServer: {
-		contentBase: path.join(__dirname, "dapp"),
+		static: {
+			directory: path.resolve(__dirname, "dapp"),
+		},
+		watchFiles: ["src/**/*"],
+		// contentBase: path.join(__dirname, "dapp"),
 		port: 8000,
-		stats: "minimal",
+		// stats: "minimal",
 	},
 };
