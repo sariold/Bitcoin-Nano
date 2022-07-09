@@ -17,13 +17,18 @@ contract FlightSuretyApp {
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
 
-    // Flight status codees
+    // Flight status codes
     uint8 private constant STATUS_CODE_UNKNOWN = 0;
     uint8 private constant STATUS_CODE_ON_TIME = 10;
     uint8 private constant STATUS_CODE_LATE_AIRLINE = 20;
     uint8 private constant STATUS_CODE_LATE_WEATHER = 30;
     uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
+
+    // Flight insurance values
+    uint256 AIRLINE_FUND_FEE = 10 ether;
+    uint256 AIRLINE_MAX_INSURANCE = 1 ether;
+    uint256 AIRLINE_PAYOUT_INSURANCE = 150;
 
     address private contractOwner; // Account used to deploy contract
 
