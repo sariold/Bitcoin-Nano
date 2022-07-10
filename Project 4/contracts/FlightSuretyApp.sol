@@ -29,16 +29,10 @@ contract FlightSuretyApp {
     uint256 AIRLINE_FUND_FEE = 10 ether;
     uint256 AIRLINE_MAX_INSURANCE = 1 ether;
     uint256 AIRLINE_PAYOUT_INSURANCE = 150;
+    uint256 AIRLINE_MAJORITY_VOTE = 2;
 
     address private contractOwner; // Account used to deploy contract
-
-    struct Flight {
-        bool isRegistered;
-        uint8 statusCode;
-        uint256 updatedTimestamp;
-        address airline;
-    }
-    mapping(bytes32 => Flight) private flights;
+    bool private operational = true;
 
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */

@@ -61,7 +61,8 @@ contract FlightSuretyData {
      * @dev Constructor
      *      The deploying account becomes contractOwner
      */
-    constructor() {
+    constructor(address airline) payable {
+        airlines[airline] = Airline(true, false, 0);
         contractOwner = msg.sender;
     }
 
