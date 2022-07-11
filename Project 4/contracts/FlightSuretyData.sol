@@ -12,58 +12,45 @@ contract FlightSuretyData {
 
     address private contractOwner; // Account used to deploy contract
     bool private operational = true; // Blocks all state changes throughout the contract if false
-    uint256 private multiplier = 150;
 
     struct Airline {
-        bool isRegistered;
-        bool isFunded;
-        uint256 wallet;
+        string name;
+        bool registered;
+        bool funded;
     }
 
     struct Flight {
         address airline;
-        bool isRegistered;
-        bytes32 key;
-        string number;
+        string key;
+        bool registered;
         uint8 status;
         uint256 time;
     }
 
     struct Claim {
-        address insuree;
+        address passenger;
         uint256 deposit;
-        bool paid;
     }
 
-    uint256 registeredAirlinesAmount = 0;
-    uint256 fundedAirlinesAmount = 0;
-    mapping(address => Airline) private airlines;
+    mapping(address => bool) private authorizedMap;
+    mapping(address => Airline) private airlineMap;
+    mapping(bytes32 => Flight) private flightMap;
+    mapping(bytes32 => Claim[]) private claimMap;
+    mapping(address => uint256) public creditMap;
 
-    mapping(bytes32 => Flight) public flights;
-    bytes32[] public registeredFlights;
-
-    mapping(bytes32 => Claim[]) public claims;
-    mapping(address => uint256) public funds;
+    uint256 private registeredAirlines = 0;
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
 
-    event AirlineRegistered(address airline);
-    event AirlineFunded(address airline);
-    event FlightRegistered(bytes32 flight);
-    event FlightProcessed(bytes32 flight, uint8 status);
-    event PassengerInsured(address passenger, bytes32 flight, uint256 deposit);
-    event PassengerCredited(address passenger, bytes32 flight, uint256 credit);
-    event PassengerPaid(address passenger, uint256 amount);
-
     /**
      * @dev Constructor
      *      The deploying account becomes contractOwner
      */
-    constructor(address airline) payable {
-        airlines[airline] = Airline(true, false, 0);
+    constructor() {
         contractOwner = msg.sender;
+        authorizedMap[msg.sender] = true;
     }
 
     /********************************************************************************************/
@@ -78,7 +65,7 @@ contract FlightSuretyData {
      *      This is used on all state changing functions to pause the contract in
      *      the event there is an issue that needs to be fixed
      */
-    modifier requireIsOperational() {
+    modifier requireOperational() {
         require(operational, "Contract is currently not operational");
         _; // All modifiers require an "_" which indicates where the function body will be added
     }
@@ -91,53 +78,32 @@ contract FlightSuretyData {
         _;
     }
 
-    /**
-     * @dev Modifier that requires the "Airline" account to not be registered
-     */
-    modifier requireAirlineNotRegistered(address airline) {
-        require(!airlines[airline].isRegistered, "Airline is registered");
+    modifier requireAuthorized() {
+        require(authorizedMap[msg.sender] == true, "Caller is not authorized");
         _;
     }
 
-    /**
-     * @dev Modifier that requires the "Airline" account to not be funded
-     */
-    modifier requireAirlineNotFunded(address airline) {
-        require(!airlines[airline].isFunded, "Airline is funded");
-        _;
-    }
-
-    /**
-     * @dev Modifier that requires the "Flight" to not be registered
-     */
-    modifier requireFlightNotRegistered(bytes32 key) {
-        require(!flights[key].isRegistered, "Flight is registered");
-        _;
-    }
-
-    /**
-     * @dev Modifier that requires the "Airline" account to be registered
-     */
     modifier requireAirlineRegistered(address airline) {
-        require(airlines[airline].isRegistered, "Airline is not registered");
+        require(
+            airlineMap[airline].registered == true,
+            "Airline is not registered"
+        );
         _;
     }
 
-    /**
-     * @dev Modifier that requires the "Airline" account to be funded
-     */
     modifier requireAirlineFunded(address airline) {
-        require(airlines[airline].isFunded, "Airline is not funded");
+        require(airlineMap[airline].funded == true, "Airline is not funded");
         _;
     }
 
-    /**
-     * @dev Modifier that requires the "Flight" to be registered
-     */
-    modifier requireFlightRegistered(bytes32 key) {
-        require(flights[key].isRegistered, "Flight is not registered");
+    modifier requirePassengerCredits(address passenger) {
+        require(creditMap[passenger] > 0, "Passenger has no available credits");
         _;
     }
+
+    // modifier requireFlightRegistered(string flight) {
+    //     require(flightMap[getFlightKey(airline, flight, timestamp);])
+    // }
 
     /********************************************************************************************/
     /*                                       UTILITY FUNCTIONS                                  */
@@ -161,6 +127,14 @@ contract FlightSuretyData {
         operational = mode;
     }
 
+    function setAuthorization(address airline, bool authorized)
+        external
+        requireOperational
+        requireContractOwner
+    {
+        authorizedMap[airline] = authorized;
+    }
+
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
@@ -170,126 +144,60 @@ contract FlightSuretyData {
      *      Can only be called from FlightSuretyApp contract
      *
      */
-    function registerAirline(address airline)
+    function registerAirline(address airline, string memory name)
         external
-        requireIsOperational
-        requireAirlineNotRegistered(airline)
-        requireAirlineNotFunded(airline)
+        requireOperational
+        requireAuthorized
     {
-        airlines[airline] = Airline(true, false, 0);
-        registeredAirlinesAmount = registeredAirlinesAmount.add(1);
-        emit AirlineRegistered(airline);
+        airlineMap[airline] = Airline(name, true, false);
+    }
+
+    function isAirlineRegistered(address airline)
+        external
+        view
+        requireOperational
+        requireAuthorized
+        returns (bool)
+    {
+        return airlineMap[airline].registered == true;
+    }
+
+    function fundAirline(address airline)
+        external
+        requireOperational
+        requireAuthorized
+    {
+        airlineMap[airline].funded = true;
+    }
+
+    function isAirlineFunded(address airline)
+        external
+        view
+        requireOperational
+        requireAuthorized
+        requireAirlineRegistered(airline)
+        returns (bool)
+    {
+        return airlineMap[airline].funded == true;
     }
 
     function registerFlight(
         address airline,
-        bytes32 key,
-        string memory number,
+        string memory flight,
         uint256 time
     )
-        public
-        payable
-        requireIsOperational
-        requireAirlineFunded(airline)
-        requireFlightNotRegistered(key)
+        external
+        requireOperational
+        requireAuthorized
+        requireAirlineRegistered(airline)
     {
-        flights[key] = Flight(airline, true, key, number, 0, time);
-        registeredFlights.push(key);
-        emit FlightRegistered(key);
-    }
-
-    function getRegisteredFlightsAmount()
-        public
-        view
-        requireIsOperational
-        returns (uint256)
-    {
-        return registeredFlights.length;
-    }
-
-    /**
-     * @dev Check if an airline is registered
-     * @return bool if an airline is registered
-     */
-    function getAirlineRegistered(address airline)
-        public
-        view
-        requireIsOperational
-        returns (bool)
-    {
-        return airlines[airline].isRegistered;
-    }
-
-    function getFlightRegistered(bytes32 key) public view returns (bool) {
-        return flights[key].isRegistered;
-    }
-
-    function getFlightGrounded(bytes32 key) public view returns (bool) {
-        return flights[key].status > 0;
-    }
-
-    function getPassengerInsuredFlight(address passenger, bytes32 key)
-        public
-        view
-        returns (bool)
-    {
-        Claim[] memory flightClaims = claims[key];
-        uint256 length = flightClaims.length;
-        for (uint256 i = 0; i < length; i++) {
-            if (flightClaims[i].insuree == passenger) return true;
-        }
-        return false;
-    }
-
-    /**
-     * @dev Check if an airline is funded
-     * @return bool if an airline is funded
-     */
-    function getAirlineFunded(address airline) public view returns (bool) {
-        return airlines[airline].isFunded;
-    }
-
-    function getRegisteredAirlinesAmount()
-        public
-        view
-        requireIsOperational
-        returns (uint256)
-    {
-        return registeredAirlinesAmount;
-    }
-
-    function getFundedAirlinesAmount()
-        public
-        view
-        requireIsOperational
-        returns (uint256)
-    {
-        return fundedAirlinesAmount;
-    }
-
-    function getFlightKey(
-        address airline,
-        string memory flight,
-        uint256 timestamp
-    ) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(airline, flight, timestamp));
-    }
-
-    function setFlightStatus(
-        address airline,
-        string calldata flight,
-        uint256 time,
-        uint8 status
-    ) external requireIsOperational {
-        bytes32 key = getFlightKey(airline, flight, time);
-        require(!getFlightGrounded(key), "Flight is grounded.");
-        if (flights[key].status == 0) {
-            flights[key].status = status;
-            if (status == 20) {
-                creditInsurees(key);
-            }
-        }
-        emit FlightProcessed(key, status);
+        flightMap[getFlightKey(airline, flight, time)] = Flight(
+            airline,
+            flight,
+            true,
+            0,
+            time
+        );
     }
 
     /**
@@ -297,49 +205,58 @@ contract FlightSuretyData {
      *
      */
     function buy(
-        bytes32 key,
-        address insuree,
+        address airline,
+        string memory flight,
+        address passenger,
         uint256 deposit
-    ) external payable requireIsOperational {
-        require(getFlightRegistered(key), "Flight registered");
-        require(!getFlightGrounded(key), "Flight grounded");
-
-        claims[key].push(Claim(insuree, deposit, false));
-        emit PassengerInsured(insuree, key, deposit);
+    )
+        external
+        requireOperational
+        requireAuthorized
+        requireAirlineRegistered(airline)
+        requireAirlineFunded(airline)
+    {
+        claimMap[keccak256(abi.encodePacked(airline, flight))].push(
+            Claim(passenger, deposit)
+        );
     }
 
     /**
      *  @dev Credits payouts to insurees
      */
-    function creditInsurees(bytes32 key) internal requireIsOperational {
-        uint256 length = claims[key].length;
+    function creditInsurees(
+        address airline,
+        string memory flight,
+        uint256 multiplier
+    ) external requireOperational requireAuthorized {
+        bytes32 key = keccak256(abi.encodePacked(airline, flight));
+        Claim[] memory insurees = claimMap[key];
+
+        uint256 available;
+        uint256 length = insurees.length;
+
         for (uint256 i = 0; i < length; i++) {
-            Claim memory claim = claims[key][i];
-            claim.paid = true;
-            uint256 amount = claim.deposit.mul(multiplier).div(100);
-            funds[claim.insuree] = funds[claim.insuree].add(amount);
-            emit PassengerCredited(claim.insuree, key, amount);
+            available = creditMap[insurees[i].passenger];
+            uint256 withdraw = (insurees[i].deposit.mul(multiplier).div(100));
+            creditMap[insurees[i].passenger] = available.add(withdraw);
         }
+
+        delete claimMap[key];
     }
 
     /**
      *  @dev Transfers eligible payout funds to insuree
      *
      */
-    function pay(address payable passenger)
+    function pay(address passenger)
         external
-        payable
-        requireIsOperational
+        requireOperational
+        requireAuthorized
+        requirePassengerCredits(passenger)
     {
-        uint256 amount = funds[passenger];
-        require(
-            address(this).balance >= amount,
-            "Contract does not have enough funds"
-        );
-        require(amount > 0, "Passenger has no funds to withdraw");
-        funds[passenger] = 0;
-        payable(address(uint160(address(passenger)))).transfer(amount);
-        emit PassengerPaid(passenger, amount);
+        uint256 available = creditMap[passenger];
+        creditMap[passenger] = 0;
+        payable(passenger).transfer(available);
     }
 
     /**
@@ -347,18 +264,14 @@ contract FlightSuretyData {
      *      resulting in insurance payouts, the contract should be self-sustaining
      *
      */
-    function fund(address airline, uint256 deposit)
-        external
-        requireIsOperational
-        requireAirlineRegistered(airline)
-        requireAirlineNotFunded(airline)
-        returns (bool)
-    {
-        airlines[airline].isFunded = true;
-        airlines[airline].wallet = airlines[airline].wallet.add(deposit);
-        fundedAirlinesAmount = fundedAirlinesAmount.add(1);
-        emit AirlineFunded(airline);
-        return airlines[airline].isFunded;
+    function fund() public payable {}
+
+    function getFlightKey(
+        address airline,
+        string memory flight,
+        uint256 timestamp
+    ) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(airline, flight, timestamp));
     }
 
     /**

@@ -6,6 +6,7 @@ pragma solidity >=0.8.15;
 // More info: https://www.nccgroup.trust/us/about-us/newsroom-and-events/blog/2018/november/smart-contract-insecurity-bad-arithmetic/
 
 import "../node_modules/@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "./FlightSuretyData.sol";
 
 /************************************************** */
 /* FlightSurety Smart Contract                      */
@@ -17,7 +18,7 @@ contract FlightSuretyApp {
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
 
-    // Flight status codes
+    // Flight status codees
     uint8 private constant STATUS_CODE_UNKNOWN = 0;
     uint8 private constant STATUS_CODE_ON_TIME = 10;
     uint8 private constant STATUS_CODE_LATE_AIRLINE = 20;
@@ -32,7 +33,7 @@ contract FlightSuretyApp {
     uint256 AIRLINE_MAJORITY_VOTE = 2;
 
     address private contractOwner; // Account used to deploy contract
-    bool private operational = true;
+    FlightSuretyData fsd;
 
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -68,8 +69,9 @@ contract FlightSuretyApp {
      * @dev Contract constructor
      *
      */
-    constructor() {
+    constructor(address _dataContract) {
         contractOwner = msg.sender;
+        fsd = FlightSuretyData(payable(_dataContract));
     }
 
     /********************************************************************************************/
