@@ -27,10 +27,9 @@ contract FlightSuretyApp {
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
 
     // Flight insurance values
-    uint256 AIRLINE_FUND_FEE = 10 ether;
     uint256 AIRLINE_MAX_INSURANCE = 1 ether;
     uint256 AIRLINE_PAYOUT_INSURANCE = 150;
-    uint256 AIRLINE_MAJORITY_VOTE = 2;
+    uint256 AIRLINE_FUNDING = 10 ether;
 
     address private contractOwner; // Account used to deploy contract
     FlightSuretyData fsd;
@@ -47,9 +46,9 @@ contract FlightSuretyApp {
      *      This is used on all state changing functions to pause the contract in
      *      the event there is an issue that needs to be fixed
      */
-    modifier requireIsOperational() {
+    modifier requireOperational() {
         // Modify to call data contract's status
-        require(true, "Contract is currently not operational");
+        require(isOperational(), "Contract is currently not operational");
         _; // All modifiers require an "_" which indicates where the function body will be added
     }
 
@@ -60,6 +59,14 @@ contract FlightSuretyApp {
         require(msg.sender == contractOwner, "Caller is not contract owner");
         _;
     }
+
+    // modifier requireAirlineFunded(address airline) {
+    //     require(
+    //         fsd.requireAirlineFunded(airline) == true,
+    //         "Airline is not funded"
+    //     );
+    //     _;
+    // }
 
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
@@ -78,8 +85,8 @@ contract FlightSuretyApp {
     /*                                       UTILITY FUNCTIONS                                  */
     /********************************************************************************************/
 
-    function isOperational() public pure returns (bool) {
-        return true; // Modify to call data contract's status
+    function isOperational() public view returns (bool) {
+        return fsd.isOperational(); // Modify to call data contract's status
     }
 
     /********************************************************************************************/
@@ -90,19 +97,71 @@ contract FlightSuretyApp {
      * @dev Add an airline to the registration queue
      *
      */
-    function registerAirline()
-        external
-        pure
-        returns (bool success, uint256 votes)
+    function registerAirline(address airline, string memory name)
+        public
+        requireOperational
     {
-        return (success, 0);
+        address[] memory airlines = fsd.getRegisteredAirlines();
+        uint256 length = airlines.length;
+        if (length < 4) {
+            require(
+                airlines[0] == msg.sender,
+                "Less than 4 airlines means only first airline can register"
+            );
+            fsd.registerAirline(airline, name);
+        } else {
+            require(
+                !fsd.isAirlineVoted(msg.sender, airline),
+                "Airline already voted for canditate"
+            );
+            uint256 voteCount = fsd.airlineVote(msg.sender, airline);
+            if (
+                SafeMath.div(SafeMath.mul(voteCount, 100), airlines.length) >=
+                50
+            ) {
+                fsd.registerAirline(airline, name);
+            }
+        }
+    }
+
+    function fundAirline() external payable requireOperational {
+        require(!fsd.isAirlineFunded(msg.sender), "Airline already funded");
+        require(
+            msg.value == AIRLINE_FUNDING,
+            "10 ether is funding requirement"
+        );
+        payable(address(fsd)).transfer(msg.value);
+        fsd.fundAirline(msg.sender);
     }
 
     /**
      * @dev Register a future flight for insuring.
      *
      */
-    function registerFlight() external pure {}
+    function registerFlight(
+        address airline,
+        string memory flight,
+        uint256 time
+    ) external requireOperational {
+        fsd.registerFlight(airline, flight, time);
+    }
+
+    function buy(address airline, string memory flight)
+        external
+        payable
+        requireOperational
+    {
+        require(
+            msg.value <= AIRLINE_MAX_INSURANCE,
+            "Requires insured amount less than or equal to $AIRLINE_MAX_INSURANCE"
+        );
+        fsd.buy(airline, flight, msg.sender, msg.value);
+        payable(address(fsd)).transfer(msg.value);
+    }
+
+    function withdraw() external requireOperational {
+        fsd.pay(msg.sender);
+    }
 
     /**
      * @dev Called after oracle has updated flight status
@@ -111,9 +170,12 @@ contract FlightSuretyApp {
     function processFlightStatus(
         address airline,
         string memory flight,
-        uint256 timestamp,
         uint8 statusCode
-    ) internal pure {}
+    ) internal requireOperational {
+        if (statusCode == STATUS_CODE_LATE_AIRLINE) {
+            fsd.creditInsurees(airline, flight, AIRLINE_PAYOUT_INSURANCE);
+        }
+    }
 
     // Generate a request for oracles to fetch flight information
     function fetchFlightStatus(
@@ -127,10 +189,13 @@ contract FlightSuretyApp {
         bytes32 key = keccak256(
             abi.encodePacked(index, airline, flight, timestamp)
         );
-        oracleResponses[key] = ResponseInfo({
-            requester: msg.sender,
-            isOpen: true
-        });
+        ResponseInfo storage responseInfo = oracleResponses[key];
+        responseInfo.requester = msg.sender;
+        responseInfo.isOpen = true;
+        // oracleResponses[key] = ResponseInfo({
+        //     requester: msg.sender,
+        //     isOpen: true
+        // });
 
         emit OracleRequest(index, airline, flight, timestamp);
     }
@@ -158,7 +223,7 @@ contract FlightSuretyApp {
     struct ResponseInfo {
         address requester; // Account that requested status
         bool isOpen; // If open, oracle responses are accepted
-        // mapping(uint8 => address[]) responses; // Mapping key is the status code reported
+        mapping(uint8 => address[]) responses; // Mapping key is the status code reported
         // This lets us group responses and identify
         // the response that majority of the oracles
     }
@@ -166,7 +231,7 @@ contract FlightSuretyApp {
     // Track all oracle responses
     // Key = hash(index, flight, timestamp)
     mapping(bytes32 => ResponseInfo) private oracleResponses;
-    mapping(uint8 => address[]) private responses; // Mapping key is the status code reported
+    // mapping(uint8 => address[]) private responses; // Mapping key is the status code reported
 
     // Event fired each time an oracle submits a response
     event FlightStatusInfo(
@@ -238,26 +303,28 @@ contract FlightSuretyApp {
             "Flight or timestamp do not match oracle request"
         );
 
-        responses[statusCode].push(msg.sender);
+        oracleResponses[key].responses[statusCode].push(msg.sender);
 
         // Information isn't considered verified until at least MIN_RESPONSES
         // oracles respond with the *** same *** information
         emit OracleReport(airline, flight, timestamp, statusCode);
-        if (responses[statusCode].length >= MIN_RESPONSES) {
+        if (
+            oracleResponses[key].responses[statusCode].length >= MIN_RESPONSES
+        ) {
             emit FlightStatusInfo(airline, flight, timestamp, statusCode);
 
             // Handle flight status as appropriate
-            processFlightStatus(airline, flight, timestamp, statusCode);
+            processFlightStatus(airline, flight, statusCode);
         }
     }
 
-    function getFlightKey(
-        address airline,
-        string memory flight,
-        uint256 timestamp
-    ) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(airline, flight, timestamp));
-    }
+    // function getFlightKey(
+    //     address airline,
+    //     string memory flight,
+    //     uint256 timestamp
+    // ) internal pure returns (bytes32) {
+    //     return keccak256(abi.encodePacked(airline, flight, timestamp));
+    // }
 
     // Returns array of three non-duplicating integers from 0-9
     function generateIndexes(address account)

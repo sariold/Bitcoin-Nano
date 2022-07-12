@@ -17,6 +17,7 @@ contract FlightSuretyData {
         string name;
         bool registered;
         bool funded;
+        uint256 votes;
     }
 
     struct Flight {
@@ -37,8 +38,9 @@ contract FlightSuretyData {
     mapping(bytes32 => Flight) private flightMap;
     mapping(bytes32 => Claim[]) private claimMap;
     mapping(address => uint256) public creditMap;
+    mapping(bytes32 => bool) private voteMap;
 
-    uint256 private registeredAirlines = 0;
+    address[] private airlines;
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -112,7 +114,7 @@ contract FlightSuretyData {
     /**
      * @dev Get operating status of contract
      *
-     * @return A bool that is the current operating status
+     * @return bool that is the current operating status
      */
     function isOperational() public view returns (bool) {
         return operational;
@@ -149,7 +151,8 @@ contract FlightSuretyData {
         requireOperational
         requireAuthorized
     {
-        airlineMap[airline] = Airline(name, true, false);
+        airlineMap[airline] = Airline(name, true, false, 0);
+        airlines.push(airline);
     }
 
     function isAirlineRegistered(address airline)
@@ -160,6 +163,16 @@ contract FlightSuretyData {
         returns (bool)
     {
         return airlineMap[airline].registered == true;
+    }
+
+    function getRegisteredAirlines()
+        external
+        view
+        requireOperational
+        requireAuthorized
+        returns (address[] memory)
+    {
+        return airlines;
     }
 
     function fundAirline(address airline)
@@ -179,6 +192,30 @@ contract FlightSuretyData {
         returns (bool)
     {
         return airlineMap[airline].funded == true;
+    }
+
+    function isAirlineVoted(address airline, address candidate)
+        external
+        view
+        requireOperational
+        requireAuthorized
+        returns (bool)
+    {
+        bytes32 vote = keccak256(abi.encodePacked(airline, candidate));
+        return voteMap[vote] == true;
+    }
+
+    function airlineVote(address airline, address candidate)
+        external
+        requireOperational
+        requireAuthorized
+        returns (uint256)
+    {
+        bytes32 vote = keccak256(abi.encodePacked(airline, candidate));
+        voteMap[vote] = true;
+        airlineMap[candidate].votes += 1;
+
+        return airlineMap[candidate].votes;
     }
 
     function registerFlight(
