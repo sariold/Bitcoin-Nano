@@ -39,6 +39,5 @@ module.exports = {
 	output: {
 		path: path.resolve(__dirname, "prod/server"),
 		filename: "server.js",
-		publicPath: "/server/",
 	},
 };

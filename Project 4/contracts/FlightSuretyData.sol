@@ -296,12 +296,12 @@ contract FlightSuretyData {
         payable(passenger).transfer(available);
     }
 
-    /**
-     * @dev Initial funding for the insurance. Unless there are too many delayed flights
-     *      resulting in insurance payouts, the contract should be self-sustaining
-     *
-     */
-    function fund() public payable {}
+    // /**
+    //  * @dev Initial funding for the insurance. Unless there are too many delayed flights
+    //  *      resulting in insurance payouts, the contract should be self-sustaining
+    //  *
+    //  */
+    // function fund() public payable {}
 
     function getFlightKey(
         address airline,
@@ -316,4 +316,6 @@ contract FlightSuretyData {
      *
      */
     fallback() external payable {}
+
+    receive() external payable {}
 }
