@@ -12,12 +12,14 @@ module.exports = async (deployer, network, accounts) => {
 	await fsd.registerAirline(firstAirline, "Ozarka Airlines");
 
 	let fsa = await deployer.deploy(FlightSuretyApp, FlightSuretyData.address);
-	await dataContract.setAuthorization(FlightSuretyApp.address);
+	await fsd.setAuthorization(FlightSuretyApp.address, true);
 
 	await fsa.fundAirline({
 		from: firstAirline,
 		value: Web3.utils.toWei("10", "ether"),
 	});
+
+	await fsd.setAuthorization(firstAirline, true);
 
 	const time = Math.floor(Date.now() / 1000);
 	await fsa.registerFlight(

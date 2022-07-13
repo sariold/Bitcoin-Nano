@@ -141,6 +141,15 @@ contract FlightSuretyData {
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
 
+    function isAirlineAuthorized(address airline)
+        external
+        view
+        requireOperational
+        returns (bool)
+    {
+        return authorizedMap[airline] == true;
+    }
+
     /**
      * @dev Add an airline to the registration queue
      *      Can only be called from FlightSuretyApp contract
@@ -159,7 +168,6 @@ contract FlightSuretyData {
         external
         view
         requireOperational
-        requireAuthorized
         returns (bool)
     {
         return airlineMap[airline].registered == true;
@@ -169,7 +177,6 @@ contract FlightSuretyData {
         external
         view
         requireOperational
-        requireAuthorized
         returns (address[] memory)
     {
         return airlines;
@@ -178,17 +185,16 @@ contract FlightSuretyData {
     function fundAirline(address airline)
         external
         requireOperational
-        requireAuthorized
+        requireAirlineRegistered(airline)
     {
         airlineMap[airline].funded = true;
+        authorizedMap[airline] = true;
     }
 
     function isAirlineFunded(address airline)
         external
         view
         requireOperational
-        requireAuthorized
-        requireAirlineRegistered(airline)
         returns (bool)
     {
         return airlineMap[airline].funded == true;
@@ -222,12 +228,7 @@ contract FlightSuretyData {
         address airline,
         string memory flight,
         uint256 time
-    )
-        external
-        requireOperational
-        requireAuthorized
-        requireAirlineRegistered(airline)
-    {
+    ) external requireOperational requireAuthorized {
         flightMap[getFlightKey(airline, flight, time)] = Flight(
             airline,
             flight,
@@ -246,13 +247,7 @@ contract FlightSuretyData {
         string memory flight,
         address passenger,
         uint256 deposit
-    )
-        external
-        requireOperational
-        requireAuthorized
-        requireAirlineRegistered(airline)
-        requireAirlineFunded(airline)
-    {
+    ) external requireOperational requireAirlineFunded(airline) {
         claimMap[keccak256(abi.encodePacked(airline, flight))].push(
             Claim(passenger, deposit)
         );
@@ -265,7 +260,7 @@ contract FlightSuretyData {
         address airline,
         string memory flight,
         uint256 multiplier
-    ) external requireOperational requireAuthorized {
+    ) external requireOperational requireAirlineFunded(airline) {
         bytes32 key = keccak256(abi.encodePacked(airline, flight));
         Claim[] memory insurees = claimMap[key];
 
@@ -288,7 +283,6 @@ contract FlightSuretyData {
     function pay(address passenger)
         external
         requireOperational
-        requireAuthorized
         requirePassengerCredits(passenger)
     {
         uint256 available = creditMap[passenger];
