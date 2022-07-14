@@ -228,7 +228,12 @@ contract FlightSuretyData {
         address airline,
         string memory flight,
         uint256 time
-    ) external requireOperational requireAuthorized {
+    )
+        external
+        requireOperational
+        requireAuthorized
+        requireAirlineFunded(airline)
+    {
         flightMap[getFlightKey(airline, flight, time)] = Flight(
             airline,
             flight,
@@ -253,6 +258,34 @@ contract FlightSuretyData {
         );
     }
 
+    function isPassengerInsured(
+        address airline,
+        string memory flight,
+        address passenger
+    ) external view requireOperational requireAuthorized returns (bool) {
+        Claim[] memory claimsForFlight = claimMap[
+            keccak256(abi.encodePacked(airline, flight))
+        ];
+
+        uint256 length = claimsForFlight.length;
+        for (uint256 i = 0; i < length; i++) {
+            if (claimsForFlight[i].passenger == passenger) return true;
+        }
+        return false;
+    }
+
+    function getClaimsForFlight(address airline, string memory flight)
+        external
+        view
+        requireOperational
+        returns (Claim[] memory)
+    {
+        Claim[] memory claimsForFlight = claimMap[
+            keccak256(abi.encodePacked(airline, flight))
+        ];
+        return claimsForFlight;
+    }
+
     /**
      *  @dev Credits payouts to insurees
      */
@@ -260,17 +293,24 @@ contract FlightSuretyData {
         address airline,
         string memory flight,
         uint256 multiplier
-    ) external requireOperational requireAirlineFunded(airline) {
+    )
+        external
+        requireOperational
+        requireAuthorized
+        requireAirlineFunded(airline)
+    {
         bytes32 key = keccak256(abi.encodePacked(airline, flight));
-        Claim[] memory insurees = claimMap[key];
+        Claim[] memory claimsForFlight = claimMap[key];
+        // return claimsForFlight;
 
         uint256 available;
-        uint256 length = insurees.length;
-
+        uint256 length = claimsForFlight.length;
         for (uint256 i = 0; i < length; i++) {
-            available = creditMap[insurees[i].passenger];
-            uint256 withdraw = (insurees[i].deposit.mul(multiplier).div(100));
-            creditMap[insurees[i].passenger] = available.add(withdraw);
+            available = creditMap[claimsForFlight[i].passenger];
+            uint256 withdraw = (
+                claimsForFlight[i].deposit.mul(multiplier).div(100)
+            );
+            creditMap[claimsForFlight[i].passenger] = available.add(withdraw);
         }
 
         delete claimMap[key];

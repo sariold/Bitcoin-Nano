@@ -21,23 +21,6 @@ module.exports = async (deployer, network, accounts) => {
 
 	await fsd.setAuthorization(firstAirline, true);
 
-	const time = Math.floor(Date.now() / 1000);
-	await fsa.registerFlight(
-		firstAirline,
-		"OA9231",
-		Math.floor(Date.now() / 1000)
-	);
-	await fsa.registerFlight(
-		firstAirline,
-		"OA1464",
-		Math.floor(Date.now() / 1000) + 100
-	);
-	await fsa.registerFlight(
-		firstAirline,
-		"OA8672",
-		Math.floor(Date.now() / 1000) + 500
-	);
-
 	let config = {
 		localhost: {
 			url: "http://localhost:7545",
