@@ -37,6 +37,9 @@ IPFS was not implemented in this project at the moment but it is a great additio
 ```5.5.15```
 
 ### Node Version
+```16.14.2```
+
+### NPM Version
 ```8.5.0```
 
 ### web3 Version
