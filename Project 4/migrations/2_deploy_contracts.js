@@ -19,11 +19,15 @@ module.exports = async (deployer, network, accounts) => {
 		value: Web3.utils.toWei("10", "ether"),
 	});
 
-	await fsd.setAuthorization(firstAirline, true);
+	const time = Math.floor(Date.now() / 1000);
+	await fsa.registerFlight(firstAirline, "OA3451", time);
+	await fsa.registerFlight(firstAirline, "OA2354", time);
+	await fsa.registerFlight(firstAirline, "OA4525", time);
+	await fsa.registerFlight(firstAirline, "OA4200", time);
 
 	let config = {
 		localhost: {
-			url: "http://localhost:7545",
+			url: "http://localhost:9545",
 			dataAddress: FlightSuretyData.address,
 			appAddress: FlightSuretyApp.address,
 		},

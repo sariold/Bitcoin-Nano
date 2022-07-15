@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>FlightSurety</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.1/css/bootstrap.min.css" rel="stylesheet">
-    <!-- <link rel="stylesheet" href="./flightsurety.css"> -->
     <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 
@@ -21,13 +20,38 @@
     </nav>
 
     <main class="container">
+        <h1>DEMO</h1>
+        <hr />
+        <h3>Ozarka Airlines address:</h3>
+        <h5 id="address"></h5>
 
-        <div id="display-wrapper" class="top-20">
-        </div>
-        <div class="row top-20">
-            <label class="form">Flight</label> <input type="text" id="flight-number"> <btn class="btn btn-primary" id="submit-oracle">Submit to Oracles</btn>
+        <div id="display-wrapper" class="top-20"></div>
+        <center><btn class="btn btn-primary" id="refresh">Check Insurance / Credit Status</btn>
+        <h6 id="insured-status">You are not currently insured!</h6>
+        <h6 id="credit-status">You have 0 ether available</h6></center>
+
+        <hr />
+            <center><label class="form">Select a flight:</label>
+            <select id="flight">
+                <option value="OA3451" selected="selected">OA3451</option>
+                <option value="OA2354">OA2354</option>
+                <option value="OA4525">OA4525</option>
+                <option value="OA4525">OA4200</option>
+            </select>
+        <hr />
+            <btn class="btn btn-primary" id="submit-oracle">Check Oracles</btn>
+            <hr />
+            <input type="text" id="deposit" style="margin:0; width:100px" value="1">&nbsp;&nbsp;ETH
+            &nbsp;
+            &nbsp;
+            <btn class="btn btn-primary" id="buy">Buy Insurance</btn>
+            <hr />
+            <btn class="btn btn-primary" id="withdraw">Withdraw Credits</btn>
+        </center>        
+        <div id="results-wrapper" class="top-20">
         </div>
     </main>
+
 </body>
 
 </html>

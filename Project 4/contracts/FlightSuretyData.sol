@@ -182,6 +182,16 @@ contract FlightSuretyData {
         return airlines;
     }
 
+    function getPassengerCredits(address passenger)
+        external
+        view
+        requireOperational
+        requireAuthorized
+        returns (uint256)
+    {
+        return creditMap[passenger];
+    }
+
     function fundAirline(address airline)
         external
         requireOperational

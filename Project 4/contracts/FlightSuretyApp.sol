@@ -153,10 +153,31 @@ contract FlightSuretyApp {
     {
         require(
             msg.value <= AIRLINE_MAX_INSURANCE,
-            "Requires insured amount less than or equal to $AIRLINE_MAX_INSURANCE"
+            "Requires insured amount less than or equal to 1 ether"
+        );
+        require(
+            !isPassengerInsured(airline, flight, msg.sender),
+            "Passenger already insured for this flight"
         );
         fsd.buy(airline, flight, msg.sender, msg.value);
         payable(address(fsd)).transfer(msg.value);
+    }
+
+    function isPassengerInsured(
+        address airline,
+        string memory flight,
+        address passenger
+    ) public view requireOperational returns (bool) {
+        return fsd.isPassengerInsured(airline, flight, passenger);
+    }
+
+    function getPassengerCredits(address passenger)
+        external
+        view
+        requireOperational
+        returns (uint256)
+    {
+        return fsd.getPassengerCredits(passenger);
     }
 
     function withdraw() external requireOperational {

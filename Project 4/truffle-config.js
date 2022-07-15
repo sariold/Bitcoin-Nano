@@ -1,6 +1,7 @@
 var HDWalletProvider = require("@truffle/hdwallet-provider");
 var mnemonic =
-	"candy maple cake sugar pudding cream honey rich smooth crumble sweet treat";
+	"worth power liberty kangaroo eternal antenna rigid frost patient water ketchup main";
+// "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat";
 
 module.exports = {
 	networks: {
