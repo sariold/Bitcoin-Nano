@@ -33,6 +33,7 @@ contract solcChecker {
     function f(bytes calldata x) external;
 }
 
+// Using the following version because Oraclize has now become ProvableThings
 contract ProvableI {
     address public cbAddress;
 

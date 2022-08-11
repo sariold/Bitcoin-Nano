@@ -1,9 +1,9 @@
 pragma solidity ^0.5.5;
 
-import "../../node_modules/openzeppelin-solidity/contracts/utils/Address.sol";
-import "../../node_modules/openzeppelin-solidity/contracts/drafts/Counters.sol";
-import "../../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "../../node_modules/openzeppelin-solidity/contracts/token/ERC721/IERC721Receiver.sol";
+import "openzeppelin-solidity/contracts/utils/Address.sol";
+import "openzeppelin-solidity/contracts/drafts/Counters.sol";
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "openzeppelin-solidity/contracts/token/ERC721/IERC721Receiver.sol";
 import "./Oraclize.sol";
 
 contract Ownable {
@@ -16,9 +16,9 @@ contract Ownable {
     }
 
     //  2) create an internal constructor that sets the _owner var to the creater of the contract
-    constructor() public {
+    constructor() internal {
         _owner = msg.sender;
-        emit OwnershipTransferred(address(0), _owner);
+        emit OwnershipTransferred(_owner);
     }
 
     //  3) create an 'onlyOwner' modifier that throws if called by any account other than the owner.
@@ -36,14 +36,13 @@ contract Ownable {
             "Requires newOwner is not empty address"
         );
 
-        address prevOwner = _owner;
         _owner = newOwner;
 
-        emit OwnershipTransferred(prevOwner, newOwner);
+        emit OwnershipTransferred(newOwner);
     }
 
     //  5) create an event that emits anytime ownerShip is transfered (including in the constructor)
-    event OwnershipTransferred(address prevOwner, address nextOwner);
+    event OwnershipTransferred(address nextOwner);
 }
 
 //  TODO's: Create a Pausable contract that inherits from the Ownable contract
@@ -66,17 +65,17 @@ contract Pausable is Ownable {
 
     //  4) create 'whenNotPaused' & 'paused' modifier that throws in the appropriate situation
     modifier whenNotPaused() {
-        require(_paused == false, "Requires contract is in play mode");
+        require(!_paused, "Requires contract is not paused");
         _;
     }
 
     modifier paused() {
-        require(_paused == true, "Requires contract is paused");
+        require(_paused, "Requires contract is paused");
         _;
     }
     //  5) create a Paused & Unpaused event that emits the address that triggered the event
-    event Paused(address sender);
-    event Unpaused(address sender);
+    event Paused(address caller);
+    event Unpaused(address caller);
 }
 
 contract ERC165 {
@@ -171,7 +170,7 @@ contract ERC721 is Pausable, ERC165 {
     function balanceOf(address owner) public view returns (uint256) {
         // TODO return the token balance of given address
         // TIP: remember the functions to use for Counters. you can refresh yourself with the link above
-        return _ownedTokensCount[owner].current();
+        return Counters.current(_ownedTokensCount[owner]);
     }
 
     function ownerOf(uint256 tokenId) public view returns (address) {
@@ -188,9 +187,8 @@ contract ERC721 is Pausable, ERC165 {
         );
         // TODO require the msg sender to be the owner of the contract or isApprovedForAll() to be true
         require(
-            msg.sender != getOwner() ||
-                isApprovedForAll(_tokenOwner[tokenId], msg.sender),
-            "Requires approval to be true"
+            msg.sender != getOwner() || isApprovedForAll(msg.sender, to),
+            "Requires message sender to be owner or approval for all to be true"
         );
         // TODO add 'to' address to token approvals
         _tokenApprovals[tokenId] = to;
@@ -290,18 +288,11 @@ contract ERC721 is Pausable, ERC165 {
     // TIP: remember the functions to use for Counters. you can refresh yourself with the link above
     function _mint(address to, uint256 tokenId) internal {
         // TODO revert if given tokenId already exists or given address is invalid
-        require(
-            _exists(tokenId) == false,
-            "Requires token does not already exist"
-        );
+        require(!_exists(tokenId), "Requires token does not already exist");
         require(to != address(0), "Requires adddress is not empty");
-        require(
-            Address.isContract(to) == false,
-            "Requires contract has a valid address"
-        );
         // TODO mint tokenId to given address & increase token count of owner
         _tokenOwner[tokenId] = to;
-        _ownedTokensCount[to].increment();
+        Counters.increment(_ownedTokensCount[to]);
         // TODO emit Transfer event
         emit Transfer(address(0), to, tokenId);
     }
@@ -316,12 +307,12 @@ contract ERC721 is Pausable, ERC165 {
         // TODO: require from address is the owner of the given token
         require(from == _tokenOwner[tokenId], "Requires owner is sender");
         // TODO: require token is being transfered to valid address
-        require(to != address(0), "Requires address is valid");
+        require(to != address(0), "Requires address is not empty");
         // TODO: clear approval
         _clearApproval(tokenId);
         // TODO: update token counts & transfer ownership of the token ID
-        _ownedTokensCount[from].decrement();
-        _ownedTokensCount[to].increment();
+        Counters.increment(_ownedTokensCount[to]);
+        Counters.decrement(_ownedTokensCount[from]);
         _tokenOwner[tokenId] = to;
         // TODO: emit correct event
         emit Transfer(from, to, tokenId);
@@ -618,16 +609,25 @@ contract ERC721Metadata is ERC721Enumerable, usingProvable {
 //      -returns a true boolean upon completion of the function
 //      -calls the superclass mint and setTokenURI functions
 
-contract CustomERC721Token is ERC721Metadata {
+contract ERC721Mintable is ERC721Metadata {
     string private _baseTokenURI =
         "https://s3-us-west-2.amazonaws.com/udacity-blockchain/capstone/";
+
+    address private owner;
 
     constructor(string memory name, string memory symbol)
         public
         ERC721Metadata(name, symbol, _baseTokenURI)
-    {}
+    {
+        owner = msg.sender;
+    }
 
-    function mint(address to, uint256 tokenId) public onlyOwner returns (bool) {
+    function mint(address to, uint256 tokenId)
+        public
+        onlyOwner
+        whenNotPaused
+        returns (bool)
+    {
         _mint(to, tokenId);
         setTokenURI(tokenId);
         return true;
