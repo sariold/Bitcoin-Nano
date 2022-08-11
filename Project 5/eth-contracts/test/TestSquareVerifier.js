@@ -9,6 +9,7 @@ contract("SquareVerifier", (accounts) => {
 		beforeEach(async () => {
 			this.contract = await SquareVerifier.new({ from: account });
 		});
+
 		// Test verification with correct proof
 		// - use the contents from proof.json generated from zokrates steps
 		it("(proof) will pass if correct", async () => {

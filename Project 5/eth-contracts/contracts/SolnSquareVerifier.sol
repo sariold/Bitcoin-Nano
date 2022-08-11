@@ -21,6 +21,7 @@ contract SolnSquareVerifier is
 
     // TODO define a mapping to store unique solutions submitted
     mapping(bytes32 => Solution) private solutions;
+    uint256 solutionCount = 0;
     // TODO Create an event to emit when a solution is added
     event AddedSolution(bytes32 key, address sender);
 
@@ -29,6 +30,7 @@ contract SolnSquareVerifier is
         require(!solutions[key].inUse, "Solution is already in use");
         solutions[key].inUse = true;
         solutions[key].sender = sender;
+        solutionCount += 1;
         emit AddedSolution(key, sender);
     }
 
