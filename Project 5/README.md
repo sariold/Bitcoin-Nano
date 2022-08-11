@@ -32,7 +32,7 @@ https://rinkeby.etherscan.io/address/0x212c2e0a66e3a28d9d37d18a390883bee2c783e6
 
 `Rarible - Seller`
 
-https://testnet.rarible.com/items?filter[collections][]=0x212c2e0a66e3a28d9d37d18a390883bee2c783e6
+https://testnet.rarible.com/collection/0x212c2e0a66e3a28d9d37d18a390883bee2c783e6
 
 `Rarible - Buyer`
 
