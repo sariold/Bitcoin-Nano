@@ -24,7 +24,7 @@
 
 [✔] - Flight Surety Project
 
-[ ] - Capstone: Real Estate Marketplace
+[✔] - Capstone: Real Estate Marketplace
 
 # Certificate Awarded?
-[ ]
+[✔]
